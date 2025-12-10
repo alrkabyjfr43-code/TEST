@@ -151,8 +151,7 @@ class AppManager {
         localStorage.setItem('access_logs', JSON.stringify(logs));
     }
 
-    getDeviceType() {
-        const ua = navigator.userAgent;
+    getDeviceType(ua = navigator.userAgent) {
         if (/mobile/i.test(ua)) return 'هاتف محمول';
         return 'كمبيوتر شخصي';
     }
@@ -224,13 +223,15 @@ class AppManager {
             } else {
                 this.dom.logsTable.innerHTML = data.map(log => {
                     const time = new Date(log.created_at).toLocaleString('ar-EG');
+                    const deviceType = this.getDeviceType(log.device);
+                    const actionText = log.action || 'غير معروف';
                     return `
                     <tr>
                         <td>${log.id}</td>
                         <td>${log.name}</td>
                         <td>${time}</td>
-                        <td><span class="badge ${this.getActionColor(log.action)}">${log.action || 'S'}</span></td>
-                        <td title="${log.device}">${log.ip}</td>
+                        <td><span class="badge ${this.getActionColor(log.action)}">${actionText}</span></td>
+                        <td title="${log.device}">${deviceType} (${log.ip})</td>
                     </tr>
                 `}).join('');
             }
