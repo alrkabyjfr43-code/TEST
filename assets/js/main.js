@@ -109,7 +109,7 @@ class AppManager {
         sessionStorage.setItem('userType', 'employee');
 
         this.logActivity(name, 'تسجيل دخول');
-        this.logToSupabase(name); // Fire and forget Supabase logging
+        this.logToSupabase(name, 'تسجيل دخول'); // Log login action
         this.showView('home-view');
         this.applySettingsToHome(); // Ensure links are fresh
     }
@@ -208,26 +208,32 @@ class AppManager {
         igLinks.forEach(a => a.href = settings.instagram_url || '#');
     }
 
-    loadAdminData() {
-        // Render Logs
-        const logs = JSON.parse(localStorage.getItem('access_logs') || '[]').reverse();
+    async loadAdminData() {
+        // Render Logs from Supabase
         if (this.dom.logsTable) {
-            this.dom.logsTable.innerHTML = logs.map(log => {
-                // Compatibility with legacy data
-                const name = log.name || log.employee_name || 'غير معروف';
-                const action = log.action || 'تسجيل دخول';
-                const time = log.time || log.login_time || new Date().toLocaleString('ar-EG');
-                const device = log.device || log.device_info || 'Unknown';
+            this.dom.logsTable.innerHTML = '<tr><td colspan="5">جاري التحميل...</td></tr>';
 
-                return `
-                <tr>
-                    <td>${log.id}</td>
-                    <td>${name}</td>
-                    <td>${time}</td>
-                    <td><span class="badge ${this.getActionColor(action)}">${action}</span></td>
-                    <td>${device}</td>
-                </tr>
-            `}).join('');
+            const { data, error } = await supabase
+                .from('logs')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('Error fetching logs:', error);
+                this.dom.logsTable.innerHTML = '<tr><td colspan="5" class="text-danger">فشل تحميل البيانات</td></tr>';
+            } else {
+                this.dom.logsTable.innerHTML = data.map(log => {
+                    const time = new Date(log.created_at).toLocaleString('ar-EG');
+                    return `
+                    <tr>
+                        <td>${log.id}</td>
+                        <td>${log.name}</td>
+                        <td>${time}</td>
+                        <td><span class="badge ${this.getActionColor(log.action)}">${log.action || 'S'}</span></td>
+                        <td title="${log.device}">${log.ip}</td>
+                    </tr>
+                `}).join('');
+            }
         }
 
         // Populate Settings Form
@@ -286,14 +292,20 @@ class AppManager {
         document.querySelectorAll('[data-setting-facebook]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const user = sessionStorage.getItem('currentUser');
-                if (user) this.logActivity(user, 'زيارة فيسبوك');
+                if (user) {
+                    this.logActivity(user, 'زيارة فيسبوك');
+                    this.logToSupabase(user, 'زيارة فيسبوك');
+                }
             });
         });
 
         document.querySelectorAll('[data-setting-instagram]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const user = sessionStorage.getItem('currentUser');
-                if (user) this.logActivity(user, 'زيارة انستغرام');
+                if (user) {
+                    this.logActivity(user, 'زيارة انستغرام');
+                    this.logToSupabase(user, 'زيارة انستغرام');
+                }
             });
         });
 
