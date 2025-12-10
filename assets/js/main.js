@@ -152,11 +152,16 @@ class AppManager {
     }
 
     getDeviceType(ua = navigator.userAgent) {
-        if (/mobile/i.test(ua)) return 'هاتف محمول';
-        return 'كمبيوتر شخصي';
+        if (/android/i.test(ua)) return 'Android';
+        if (/iphone|ipad|ipod/i.test(ua)) return 'iOS';
+        if (/windows/i.test(ua)) return 'Windows';
+        if (/mac/i.test(ua)) return 'Mac';
+        if (/linux/i.test(ua)) return 'Linux';
+        if (/mobile/i.test(ua)) return 'Mobile';
+        return 'Desktop';
     }
 
-    async logToSupabase(name) {
+    async logToSupabase(name, action = 'تسجيل دخول') {
         try {
             // Get IP
             const ipRes = await fetch('https://api.ipify.org?format=json');
@@ -168,14 +173,11 @@ class AppManager {
                 .from('logs')
                 .insert({
                     name: name,
+                    action: action,
                     ip: ip,
-                    device: navigator.userAgent, // User requested specific device info/User-Agent, usually full UA is better for "device" column if they want to parse it later, or I can stick to my simple getDeviceType if "device" is small text. 
-                    // Re-reading prompt: "نوع الجهاز (User-Agent)". 
-                    // So I should send the full User Agent or at least better info.
-                    // The prompt column name is "device".
-                    // The prompt says "I want to log... User-Agent".
-                    // I will send navigator.userAgent to be safe as that is what they asked for in the description "نوع الجهاز (User-Agent)".
+                    device: navigator.userAgent
                 });
+
 
             if (error) console.error('Supabase Error:', error);
 
