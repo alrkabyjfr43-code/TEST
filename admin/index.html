@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة التحكم - الأدمن</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="../assets/css/style.css">
+    <style>
+        .admin-nav {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+        .table-glass {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .table-glass th, .table-glass td {
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        .tab-content {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 0 0 10px 10px;
+        }
+        .nav-tabs .nav-link {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            margin-left: 2px;
+        }
+        .nav-tabs .nav-link.active {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark admin-nav mb-4">
+    <div class="container">
+        <span class="navbar-brand mb-0 h1">لوحة تحكم الأدمن</span>
+        <a href="../home.html" class="btn btn-sm btn-outline-light" onclick="logout(); return false;">العودة للرئيسية</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div id="message-alert" style="display:none;" class="alert alert-success text-center"></div>
+
+    <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="logs-tab" data-bs-toggle="tab" data-bs-target="#logs" type="button" role="tab">سجل الدخول</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab">الإعدادات</button>
+        </li>
+    </ul>
+
+    <div class="tab-content glass-card mx-0 w-100" style="max-width: 100%;">
+        <!-- Logs Tab -->
+        <div class="tab-pane fade show active" id="logs" role="tabpanel">
+            <h4 class="mb-4">سجل دخول الموظفين</h4>
+            <div class="table-responsive">
+                <table class="table table-glass text-center">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الاسم</th>
+                            <th>الوقت</th>
+                            <th>الحدث</th>
+                            <th>IP</th>
+                            <th>الجهاز</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logs-tbody">
+                        <!-- سيتم ملء هنا من JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div class="tab-pane fade" id="settings" role="tabpanel">
+            <h4 class="mb-4">إعدادات الموقع</h4>
+            <form onsubmit="updateSettings(event)">
+                <div class="mb-3">
+                    <label class="form-label">رابط فيسبوك</label>
+                    <input type="url" id="facebook_url" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">رابط انستغرام</label>
+                    <input type="url" id="instagram_url" class="form-control">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">رابط اللوغو (صورة)</label>
+                    <input type="url" id="logo_url" class="form-control">
+                    <small class="text-white-50">يمكنك وضع رابط مباشر للصورة هنا</small>
+                </div>
+                <button type="submit" class="btn btn-custom">حفظ التغييرات</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+// Check if admin is logged in
+if (!app.isAdminLogged()) {
+    window.location.href = '../index.html';
+}
+
+// Load logs (uses app.loadAdminLogs)
+function loadLogs() {
+    app.loadAdminLogs('#logs-tbody');
+}
+
+// Load settings into form
+function loadSettingsForm() {
+    const settings = app.getSettings();
+    document.getElementById('facebook_url').value = settings.facebook_url || '';
+    document.getElementById('instagram_url').value = settings.instagram_url || '';
+    document.getElementById('logo_url').value = settings.company_logo || '';
+}
+
+// Update settings
+function updateSettings(e) {
+    e.preventDefault();
+    const settings = {
+        facebook_url: document.getElementById('facebook_url').value,
+        instagram_url: document.getElementById('instagram_url').value,
+        company_logo: document.getElementById('logo_url').value
+    };
+    
+    app.updateSettings(settings);
+    
+    const alert = document.getElementById('message-alert');
+    alert.textContent = 'تم تحديث الإعدادات بنجاح!';
+    alert.style.display = 'block';
+    
+    setTimeout(() => {
+        alert.style.display = 'none';
+    }, 3000);
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadLogs();
+    loadSettingsForm();
+    if (typeof AOS !== 'undefined') {
+        AOS.init();
+    }
+});
+</script>
+</body>
+</html>
