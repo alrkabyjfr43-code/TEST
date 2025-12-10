@@ -24,6 +24,17 @@ class AppManager {
 
         // Initialize External Libraries
         this.initAOS();
+        this.initTilt();
+        this.initSpotlight();
+
+        // Remove Preloader
+        window.addEventListener('load', () => {
+            const loader = document.getElementById('preloader');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 800);
+            }
+        });
     }
 
     // --- Initialization ---
@@ -57,8 +68,37 @@ class AppManager {
 
     initAOS() {
         if (typeof AOS !== 'undefined') {
-            AOS.init({ duration: 800, easing: 'ease-out-cubic', once: true });
+            AOS.init({
+                duration: 1000,
+                easing: 'ease-out-cubic',
+                once: true,
+                offset: 50
+            });
         }
+    }
+
+    initTilt() {
+        if (typeof VanillaTilt !== 'undefined') {
+            VanillaTilt.init(document.querySelectorAll("[data-tilt]"), {
+                max: 12,
+                speed: 400,
+                glare: true,
+                "max-glare": 0.2,
+                scale: 1.05
+            });
+        }
+    }
+
+    initSpotlight() {
+        document.querySelectorAll('.glass-card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                card.style.setProperty('--mouse-x', `${x}px`);
+                card.style.setProperty('--mouse-y', `${y}px`);
+            });
+        });
     }
 
     // --- Core Logic: Navigation ---
