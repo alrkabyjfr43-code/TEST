@@ -4,6 +4,12 @@
  * Features: Dark Mode, Admin Panel, Activity Tracking, and Dynamic Views.
  */
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://jecreaimsuocilkrohuy.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_E1q5oy5VhHVz_mAos4XnHQ_17hZT9gk'; // User provided anon key
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 class AppManager {
     constructor() {
         // Initialize State
@@ -103,6 +109,7 @@ class AppManager {
         sessionStorage.setItem('userType', 'employee');
 
         this.logActivity(name, 'تسجيل دخول');
+        this.logToSupabase(name); // Fire and forget Supabase logging
         this.showView('home-view');
         this.applySettingsToHome(); // Ensure links are fresh
     }
@@ -148,6 +155,34 @@ class AppManager {
         const ua = navigator.userAgent;
         if (/mobile/i.test(ua)) return 'هاتف محمول';
         return 'كمبيوتر شخصي';
+    }
+
+    async logToSupabase(name) {
+        try {
+            // Get IP
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            const ip = ipData.ip;
+
+            // Send to Supabase
+            const { error } = await supabase
+                .from('logs')
+                .insert({
+                    name: name,
+                    ip: ip,
+                    device: navigator.userAgent, // User requested specific device info/User-Agent, usually full UA is better for "device" column if they want to parse it later, or I can stick to my simple getDeviceType if "device" is small text. 
+                    // Re-reading prompt: "نوع الجهاز (User-Agent)". 
+                    // So I should send the full User Agent or at least better info.
+                    // The prompt column name is "device".
+                    // The prompt says "I want to log... User-Agent".
+                    // I will send navigator.userAgent to be safe as that is what they asked for in the description "نوع الجهاز (User-Agent)".
+                });
+
+            if (error) console.error('Supabase Error:', error);
+
+        } catch (err) {
+            console.error('Supabase Logging Failed:', err);
+        }
     }
 
     updateSettings(data) {
