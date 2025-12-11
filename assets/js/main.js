@@ -62,7 +62,13 @@ class AppManager {
             settingsForm: document.getElementById('settings-form'),
             socialLinks: document.querySelectorAll('.social-icon'),
             logoutBtns: document.querySelectorAll('[onclick="logout()"]'), // Validating fallback
-            logsTable: document.getElementById('logs-tbody')
+            logsTable: document.getElementById('logs-tbody'),
+            // Search Elements
+            searchInput: document.getElementById('admin-search-input'),
+            searchBtn: document.getElementById('admin-search-btn'),
+            searchStats: document.getElementById('search-stats'),
+            statsName: document.getElementById('stats-name'),
+            statsCount: document.getElementById('stats-count')
         };
     }
 
@@ -289,6 +295,66 @@ class AppManager {
         }
     }
 
+    async handleAdminSearch(name) {
+        if (!name.trim()) {
+            if (this.dom.searchStats) this.dom.searchStats.style.display = 'none';
+            this.loadAdminData(); // Reset to all logs
+            return;
+        }
+
+        if (this.dom.logsTable) {
+            this.dom.logsTable.innerHTML = '<tr><td colspan="5">جاري البحث...</td></tr>';
+        }
+
+        // 1. Get Total Count
+        const { count, error: countError } = await supabase
+            .from('logs')
+            .select('*', { count: 'exact', head: true })
+            .ilike('name', `%${name}%`);
+
+        // 2. Get Last 5 Records
+        const { data, error: dataError } = await supabase
+            .from('logs')
+            .select('*')
+            .ilike('name', `%${name}%`)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+        if (countError || dataError) {
+            console.error('Search Error:', countError || dataError);
+            if (this.dom.logsTable) this.dom.logsTable.innerHTML = '<tr><td colspan="5" class="text-danger">فشل البحث</td></tr>';
+            return;
+        }
+
+        // Update Stats
+        if (this.dom.searchStats) {
+            this.dom.searchStats.style.display = 'flex';
+            this.dom.statsName.textContent = name;
+            this.dom.statsCount.textContent = count;
+        }
+
+        // Render Table
+        if (this.dom.logsTable) {
+            if (!data || data.length === 0) {
+                this.dom.logsTable.innerHTML = '<tr><td colspan="5">لا توجد سجلات لهذا الموظف</td></tr>';
+            } else {
+                this.dom.logsTable.innerHTML = data.map(log => {
+                    const time = new Date(log.created_at).toLocaleString('ar-EG');
+                    const deviceType = this.getDeviceType(log.device);
+                    const actionText = log.action || 'غير معروف';
+                    return `
+                    <tr>
+                        <td>${log.id}</td>
+                        <td>${log.name}</td>
+                        <td>${time}</td>
+                        <td><span class="badge ${this.getActionColor(log.action)}">${actionText}</span></td>
+                        <td title="${log.device}">${deviceType} (${log.ip})</td>
+                    </tr>
+                `}).join('');
+            }
+        }
+    }
+
     getActionColor(action) {
         if (!action) return 'bg-secondary';
         if (action.includes('دخول')) return 'bg-success';
@@ -356,6 +422,26 @@ class AppManager {
         // Actually, let's bind it here to be clean
         if (this.dom.themeToggle) {
             this.dom.themeToggle.onclick = () => this.toggleTheme();
+        }
+
+        // Admin Search (Live + Debounce)
+        if (this.dom.searchBtn) {
+            this.dom.searchBtn.addEventListener('click', () => {
+                const query = this.dom.searchInput.value;
+                this.handleAdminSearch(query);
+            });
+        }
+
+        let searchTimeout;
+        if (this.dom.searchInput) {
+            this.dom.searchInput.addEventListener('input', (e) => {
+                const query = e.target.value;
+                clearTimeout(searchTimeout);
+                // Debounce 500ms
+                searchTimeout = setTimeout(() => {
+                    this.handleAdminSearch(query);
+                }, 500);
+            });
         }
     }
 }
